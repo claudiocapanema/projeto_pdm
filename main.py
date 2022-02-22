@@ -66,7 +66,7 @@ def one_scatter(df, column, filename):
     fig.update_layout(
         showlegend=True,
         xaxis_type='category',
-        title_text="Porcentagem de músicas ouvidas de cada artista (dentre os top 10 artistas) ao longo do tempo",
+        title_text="Porcentagem de músicas ouvidas de cada artista (dentre os top 10 artistas) no tempo",
         yaxis=dict(
             type='linear',
             range=[1, 100],
@@ -142,26 +142,27 @@ def two_bar_two(df):
 
 
 
-def three(df):
-
-    df = df.sort_values('created_at')
-    first = int(df.head(1)['followers_count'])
-    last = int(df.tail(1)['followers_count'])
-    user_id = str(df.head(1)['user_id'])
-    total = len(df)
-    ngrams_list = df['ngrams'].to_numpy().flatten().tolist()
-    ngrams_list = np.concatenate(ngrams_list)
-    df_ngrams = pd.DataFrame({'ngrams': ngrams_list, 'teste': ngrams_list})
-    df_ngrams = df_ngrams.groupby('ngrams').count().reset_index().sort_values('teste', ascending=False)
-    ngrams_list = df_ngrams.head(5)['ngrams'].tolist()
-    added = last - first
-
-    return pd.DataFrame({'user_id': [user_id], 'new_followers': [added], 'total_tweets': [total], 'ngrams': [str(ngrams_list)]})
+# def three(df):
+#
+#     df = df.sort_values('created_at')
+#     first = int(df.head(1)['followers_count'])
+#     last = int(df.tail(1)['followers_count'])
+#     user_id = str(df.head(1)['user_id'])
+#     total = len(df)
+#     ngrams_list = df['ngrams'].to_numpy().flatten().tolist()
+#     ngrams_list = np.concatenate(ngrams_list)
+#     df_ngrams = pd.DataFrame({'ngrams': ngrams_list, 'teste': ngrams_list})
+#     df_ngrams = df_ngrams.groupby('ngrams').count().reset_index().sort_values('teste', ascending=False)
+#     ngrams_list = df_ngrams.head(5)['ngrams'].tolist()
+#     added = last - first
+#
+#     return pd.DataFrame({'user_id': [user_id], 'new_followers': [added], 'total_tweets': [total], 'ngrams': [str(ngrams_list)]})
 
 def three_(df, filename):
     x = df['year'].unique().tolist()
     print("entra", df)
     df = df.head(10)
+    df = df[df['year'] != 2013]
     df = df.sort_values('year')
     artists = df['country'].unique().tolist()
     fig = go.Figure()
@@ -173,6 +174,7 @@ def three_(df, filename):
     for i in range(len(artists)):
         artist = artists[i]
         df_artist = df[df['country'] == artist]
+        df_artist = df_artist.sort_values('year')
         fig.add_trace(go.Scatter(
             x=df_artist['year'].tolist(), y=df_artist['Porcentagem'].tolist(),
             mode='lines',
@@ -215,7 +217,7 @@ def four(df, centers, filename):
     plt.scatter(centers[:, 0], centers[:, 1], s=80, color='black')
     plt.xlabel("Idade do usuário")
     plt.ylabel("Idade da música")
-    plt.title("Agrupamento de usuários com base nas suas idade e na idade das músicas")
+    plt.title("Agrupamento de usuários com base nas suas idades e na idade das músicas")
     fig.savefig(filename)
 
 if __name__ == '__main__':
@@ -240,7 +242,9 @@ if __name__ == '__main__':
     users = users.withColumn('registered', col('registered').substr(9, 10))
     users = users.withColumn('registered', F.to_date(col('registered')))
     users = users.withColumn('duration_years', (col('timestamp') - col('registered')).cast('string').substr(11, 4).cast('int')/360)
+    users.show(1)
 
+    print(users.select('age').dropna().toPandas().describe())
     # Questão 1
     users_1 = users.select('artist', 'timestamp').dropna()
 
@@ -357,4 +361,4 @@ if __name__ == '__main__':
     for center in centers:
         print(center)
 
-    four(predictions.sample(fraction=0.1, seed=1).toPandas(), centers, "four.png")
+    four(predictions.sample(fraction=1., seed=1).toPandas(), centers, "four.png")
